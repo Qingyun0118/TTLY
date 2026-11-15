@@ -65,8 +65,14 @@ jobs:
           windeployqt --release --no-translations --compiler-runtime "$package/$exe"
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
           if (!(Test-Path "$package/platforms/qwindows.dll")) { throw "Missing Qt Windows platform plugin" }
+          # windeployqt does not reliably include the offscreen plugin required by CI.
+          $qmakeDir = Split-Path (Get-Command qmake).Source -Parent
+          $offscreen = Join-Path $qmakeDir "../plugins/platforms/qoffscreen.dll"
+          if (!(Test-Path $offscreen)) { throw "Qt offscreen platform plugin missing: $offscreen" }
+          Copy-Item $offscreen "$package/platforms/qoffscreen.dll" -Force
 
       - name: Render GUI screenshot without robot hardware
+        timeout-minutes: 3
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -76,8 +82,15 @@ jobs:
           New-Item -ItemType Directory -Force -Path (Split-Path $screenshot) | Out-Null
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QT_OPENGL = 'software'
-          & $exe --screenshot $screenshot
-          if ($LASTEXITCODE -ne 0) { throw "GUI screenshot process failed: $LASTEXITCODE" }
+          # Windows GUI-subsystem executables may return before they exit when invoked
+          # with '&' from PowerShell; LASTEXITCODE can therefore be null. Wait explicitly.
+          $env:QT_DEBUG_PLUGINS = '1'
+          $stderr = Join-Path $env:RUNNER_TEMP "ttly-$edition-gui-stderr.log"
+          $stdout = Join-Path $env:RUNNER_TEMP "ttly-$edition-gui-stdout.log"
+          $proc = Start-Process -FilePath $exe -ArgumentList @('--screenshot', "`"$screenshot`"") -Wait -PassThru -RedirectStandardError $stderr -RedirectStandardOutput $stdout
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($proc.ExitCode -ne 0) { throw "GUI screenshot process failed: $($proc.ExitCode)" }
           if (!(Test-Path $screenshot)) { throw "Screenshot was not created" }
           Add-Type -AssemblyName System.Drawing
           $bitmap = [System.Drawing.Image]::FromFile($screenshot)
