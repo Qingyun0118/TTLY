@@ -13,7 +13,7 @@ TTLY 是水下机器人控制与数据采集项目，包含 Qt 桌面上位机�
 
 GitHub Actions 在 Windows 上编译两版 Qt 5 桌面上位机，并使用 `windeployqt` 打包所需的 Qt DLL 和插件。前往 [Windows 构建工作流](https://github.com/Qingyun0118/TTLY/actions/workflows/windows-build.yml)，打开成功的运行记录，在 **Artifacts** 中分别下载 `ttly-tcp-windows` 和 `ttly-serial-windows`。解压整个文件夹后运行其中的 `.exe`；不要只拷贝单独的 EXE。
 
-下方两张图片已由成功的 Windows GitHub Actions 构建通过 Qt 离屏渲染自动生成并提交。它们反映主窗口的初始界面，**不代表**真实串口、网络、手柄、视频或音频设备已连通。
+下方两张图片由 Windows GitHub Actions 在原生 Windows Qt 平台上启动程序，并通过 `QWidget::grab()` 自动捕获。两版在未连接硬件时使用基本一致的主窗口布局，所以初始截图几乎相同；主要区别在控制通信方式。截图已增加文字可见性检查，**不代表**真实串口、网络、手柄、视频或音频设备已连通。
 
 ### TCP 控制版
 
