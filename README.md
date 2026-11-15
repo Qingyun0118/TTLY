@@ -9,6 +9,22 @@ TTLY 是水下机器人控制与数据采集项目，包含 Qt 桌面上位机�
 
 两版均已在 Linux 完成 Release 构建和离屏窗口冒烟检查；保留的声音模型已完成 CPU 真实推理。运行环境、命令与结果见 [验证记录](docs/VALIDATION.md)。机器人、手柄、相机和麦克风的实机通信尚需在目标设备联调。两版界面的“三维重建”按钮尚无实现，重建通过独立工具完成。
 
+## Windows 可执行程序与界面预览
+
+GitHub Actions 在 Windows 上编译两版 Qt 5 桌面上位机，并使用 `windeployqt` 打包所需的 Qt DLL 和插件。前往 [Windows 构建工作流](https://github.com/Qingyun0118/TTLY/actions/workflows/windows-build.yml)，打开成功的运行记录，在 **Artifacts** 中分别下载 `ttly-tcp-windows` 和 `ttly-serial-windows`。解压整个文件夹后运行其中的 `.exe`；不要只拷贝单独的 EXE。
+
+下方图片由构建出的程序通过 Qt 离屏渲染自动截取，首次构建完成并提交截图后显示。它们反映主窗口的初始界面，**不代表**真实串口、网络、手柄、视频或音频设备已连通。
+
+### TCP 控制版
+
+![TCP 版 Qt 上位机主界面](docs/screenshots/ttly-tcp.png)
+
+### 串口控制版
+
+![串口版 Qt 上位机主界面](docs/screenshots/ttly-serial.png)
+
+工作流支持手动启动，且在 `main` 分支更新时自动构建。Windows 编译和运行验证结果以 GitHub Actions 实际执行状态为准；声音识别所需的 Python 环境及模型需按后文单独配置。
+
 ## 目录
 
 ```text

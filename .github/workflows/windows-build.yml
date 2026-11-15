@@ -1,0 +1,138 @@
+name: Windows EXE build and UI previews
+
+on:
+  push:
+    branches:
+      - main
+      - ci/windows-exe-readme-previews
+    paths-ignore:
+      - "docs/screenshots/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - edition: tcp
+            project: TTLY/TTLY4.2tcp/TTLY.pro
+            executable: ttly-tcp.exe
+          - edition: serial
+            project: TTLY/TTLY4.3serial/TTLY.pro
+            executable: ttly-serial.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt 5.15.2 and required modules
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          arch: win64_msvc2019_64
+          # Qt 5 bundles Gamepad, Multimedia and SerialPort in base archives.
+          cache: true
+
+      - name: Configure MSVC build environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build Qt GUI (Release)
+        shell: cmd
+        run: |
+          mkdir build\${{ matrix.edition }}
+          cd build\${{ matrix.edition }}
+          qmake ..\..\${{ matrix.project }} CONFIG+=release CONFIG-=debug
+          nmake
+
+      - name: Deploy Windows Qt dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $edition = '${{ matrix.edition }}'
+          $exe = '${{ matrix.executable }}'
+          $source = "build/$edition/release/$exe"
+          if (!(Test-Path $source)) { throw "Build output not found: $source" }
+          $package = "dist/ttly-$edition-windows"
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item $source $package
+          windeployqt --release --no-translations --compiler-runtime "$package/$exe"
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
+          if (!(Test-Path "$package/platforms/qwindows.dll")) { throw "Missing Qt Windows platform plugin" }
+          # windeployqt does not reliably include the offscreen plugin required by CI.
+          $qmakeDir = Split-Path (Get-Command qmake).Source -Parent
+          $offscreen = Join-Path $qmakeDir "../plugins/platforms/qoffscreen.dll"
+          if (!(Test-Path $offscreen)) { throw "Qt offscreen platform plugin missing: $offscreen" }
+          Copy-Item $offscreen "$package/platforms/qoffscreen.dll" -Force
+
+      - name: Render GUI screenshot without robot hardware
+        timeout-minutes: 3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $edition = '${{ matrix.edition }}'
+          $exe = "${{ github.workspace }}/dist/ttly-$edition-windows/${{ matrix.executable }}"
+          $screenshot = "${{ github.workspace }}/docs/screenshots/ttly-$edition.png"
+          New-Item -ItemType Directory -Force -Path (Split-Path $screenshot) | Out-Null
+          $env:QT_QPA_PLATFORM = 'offscreen'
+          $env:QT_OPENGL = 'software'
+          # Windows GUI-subsystem executables may return before they exit when invoked
+          # with '&' from PowerShell; LASTEXITCODE can therefore be null. Wait explicitly.
+          $env:QT_DEBUG_PLUGINS = '1'
+          $stderr = Join-Path $env:RUNNER_TEMP "ttly-$edition-gui-stderr.log"
+          $stdout = Join-Path $env:RUNNER_TEMP "ttly-$edition-gui-stdout.log"
+          $proc = Start-Process -FilePath $exe -ArgumentList @('--screenshot', "`"$screenshot`"") -Wait -PassThru -RedirectStandardError $stderr -RedirectStandardOutput $stdout
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($proc.ExitCode -ne 0) { throw "GUI screenshot process failed: $($proc.ExitCode)" }
+          if (!(Test-Path $screenshot)) { throw "Screenshot was not created" }
+          Add-Type -AssemblyName System.Drawing
+          $bitmap = [System.Drawing.Image]::FromFile($screenshot)
+          try {
+            if ($bitmap.Width -lt 600 -or $bitmap.Height -lt 400) {
+              throw "Unexpected screenshot size: $($bitmap.Width)x$($bitmap.Height)"
+            }
+            Write-Host "Screenshot: $($bitmap.Width)x$($bitmap.Height)"
+          } finally {
+            $bitmap.Dispose()
+          }
+
+      - name: Upload portable Windows EXE bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttly-${{ matrix.edition }}-windows
+          path: dist/ttly-${{ matrix.edition }}-windows/
+          if-no-files-found: error
+
+      - name: Upload UI screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttly-${{ matrix.edition }}-preview
+          path: docs/screenshots/ttly-${{ matrix.edition }}.png
+          if-no-files-found: error
+
+      - name: Commit verified GUI preview to README asset folder
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "docs/screenshots/ttly-${{ matrix.edition }}.png"
+          if (git diff --cached --quiet) { exit 0 }
+          # Matrix jobs may push simultaneously. Fetch/rebase before push to avoid losing previews.
+          git commit -m "docs: capture ${{ matrix.edition }} Qt UI preview [skip ci]"
+          for ($attempt = 1; $attempt -le 5; $attempt++) {
+            git fetch origin "${{ github.ref_name }}"
+            git rebase "origin/${{ github.ref_name }}"
+            git push origin "HEAD:refs/heads/${{ github.ref_name }}"
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Start-Sleep -Seconds (2 * $attempt)
+          }
+          throw "Could not push UI screenshot after retries"
