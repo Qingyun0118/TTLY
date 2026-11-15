@@ -13,7 +13,7 @@ TTLY 是水下机器人控制与数据采集项目，包含 Qt 桌面上位机�
 
 GitHub Actions 在 Windows 上编译两版 Qt 5 桌面上位机，并使用 `windeployqt` 打包所需的 Qt DLL 和插件。前往 [Windows 构建工作流](https://github.com/Qingyun0118/TTLY/actions/workflows/windows-build.yml)，打开成功的运行记录，在 **Artifacts** 中分别下载 `ttly-tcp-windows` 和 `ttly-serial-windows`。解压整个文件夹后运行其中的 `.exe`；不要只拷贝单独的 EXE。
 
-下方图片由构建出的程序通过 Qt 离屏渲染自动截取，首次构建完成并提交截图后显示。它们反映主窗口的初始界面，**不代表**真实串口、网络、手柄、视频或音频设备已连通。
+下方两张图片已由成功的 Windows GitHub Actions 构建通过 Qt 离屏渲染自动生成并提交。它们反映主窗口的初始界面，**不代表**真实串口、网络、手柄、视频或音频设备已连通。
 
 ### TCP 控制版
 
@@ -87,7 +87,7 @@ mkdir -p build/tcp build/serial
 
 本次实际验证环境为 **Ubuntu 26.04.1 x86_64、Qt 5.15.18、qmake 3.1、G++ 15.2**。两版完整编译、主窗口/音频窗口/视频窗口的离屏创建、默认端口与输出路径检查均通过；编译时项目路径宏的含空格路径 qmake/C++ 小工程检查也通过。离屏检查不代替物理设备通信测试。
 
-原工程的 Windows 配置为 **Qt 5.15.2 / MinGW 64 位**，本次没有验证 Windows 构建。在 Qt Creator 中打开对应 `TTLY.pro` 并选择匹配的 Qt 5 Kit；MinGW 使用 `mingw32-make`，分发程序时使用匹配版本的 `windeployqt` 部署 DLL 与插件。
+原工程的 Windows 配置为 **Qt 5.15.2 / MinGW 64 位**。现在 [Windows GitHub Actions 构建](https://github.com/Qingyun0118/TTLY/actions/workflows/windows-build.yml) 使用 **Qt 5.15.2 / MSVC 2019 64 位**，已完成两版 Release 编译、`windeployqt` 打包及离屏 UI 截图；尚未进行实体机器人或各类外设的 Windows 联调。在 Qt Creator 中打开对应 `TTLY.pro` 并选择匹配的 Qt 5 Kit；使用 MinGW 手工构建时用 `mingw32-make`，分发程序时使用匹配版本的 `windeployqt` 部署 DLL 与插件。
 
 ## 跑通声音识别
 
