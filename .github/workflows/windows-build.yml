@@ -35,7 +35,7 @@ jobs:
         with:
           version: '5.15.2'
           arch: win64_msvc2019_64
-          modules: 'qtgamepad qtmultimedia qtserialport'
+          # Qt 5 bundles Gamepad, Multimedia and SerialPort in base archives.
           cache: true
 
       - name: Configure MSVC build environment
