@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - ci/windows-exe-readme-previews
+      - fix/windows-screenshot-text
     paths-ignore:
       - "docs/screenshots/**"
   workflow_dispatch:
@@ -65,11 +66,6 @@ jobs:
           windeployqt --release --no-translations --compiler-runtime "$package/$exe"
           if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
           if (!(Test-Path "$package/platforms/qwindows.dll")) { throw "Missing Qt Windows platform plugin" }
-          # windeployqt does not reliably include the offscreen plugin required by CI.
-          $qmakeDir = Split-Path (Get-Command qmake).Source -Parent
-          $offscreen = Join-Path $qmakeDir "../plugins/platforms/qoffscreen.dll"
-          if (!(Test-Path $offscreen)) { throw "Qt offscreen platform plugin missing: $offscreen" }
-          Copy-Item $offscreen "$package/platforms/qoffscreen.dll" -Force
 
       - name: Render GUI screenshot without robot hardware
         timeout-minutes: 3
@@ -80,7 +76,10 @@ jobs:
           $exe = "${{ github.workspace }}/dist/ttly-$edition-windows/${{ matrix.executable }}"
           $screenshot = "${{ github.workspace }}/docs/screenshots/ttly-$edition.png"
           New-Item -ItemType Directory -Force -Path (Split-Path $screenshot) | Out-Null
-          $env:QT_QPA_PLATFORM = 'offscreen'
+          # Use the native Windows QPA, not qoffscreen: Qt 5's offscreen
+          # plugin has no normal Windows system font database and produced textless PNGs.
+          # QWidget::grab() still renders the Qt window without needing a real monitor.
+          $env:QT_QPA_PLATFORM = 'windows'
           $env:QT_OPENGL = 'software'
           # Windows GUI-subsystem executables may return before they exit when invoked
           # with '&' from PowerShell; LASTEXITCODE can therefore be null. Wait explicitly.
@@ -98,7 +97,22 @@ jobs:
             if ($bitmap.Width -lt 600 -or $bitmap.Height -lt 400) {
               throw "Unexpected screenshot size: $($bitmap.Width)x$($bitmap.Height)"
             }
-            Write-Host "Screenshot: $($bitmap.Width)x$($bitmap.Height)"
+            # Regression guard: earlier screenshots were 1600x1200 but had NO text.
+            # Ignore the bottom-right blue logo; normal dark glyphs must be visible
+            # throughout the main window. No OCR is required for this sanity check.
+            $dark = 0
+            for ($y = 20; $y -lt [Math]::Min($bitmap.Height, 1000); $y += 4) {
+              for ($x = 20; $x -lt [Math]::Min($bitmap.Width, 1250); $x += 4) {
+                $pixel = $bitmap.GetPixel($x, $y)
+                if ($pixel.R -lt 120 -and $pixel.G -lt 120 -and $pixel.B -lt 120) {
+                  $dark++
+                }
+              }
+            }
+            Write-Host "Screenshot: $($bitmap.Width)x$($bitmap.Height), sampled dark pixels: $dark"
+            if ($dark -lt 100) {
+              throw "GUI screenshot has too little visible text/foreground content ($dark dark samples)"
+            }
           } finally {
             $bitmap.Dispose()
           }
