@@ -1,0 +1,24 @@
+TTLY
+
+The project-original portions of TTLY/, PICode/, Sound_Rec/, tools/, tests/,
+the project documentation, and other project-original support files are
+licensed under the Apache License, Version 2.0. See LICENSE.
+
+The retained classifier Sound_Rec/animal_classifier_pro.joblib3 was trained
+by the project author. The author has confirmed permission to publish it
+under the same Apache-2.0 license. Training audio is not distributed.
+
+Third-party material retains its existing notices and license terms:
+
+- SLAM3R/ contains upstream SLAM3R and inherited code, including files
+  marked CC BY-NC-SA 4.0 (non-commercial use only).
+- InstantNGP/ retains the NVIDIA Source Code License-NC in
+  InstantNGP/LICENSE.txt. Its scripts/flip/ files contain separate
+  redistribution terms in their source headers.
+- Downloaded models and separately installed dependencies retain their
+  respective upstream terms. The YAMNet feature model is not bundled in
+  the repository.
+
+The project's Apache-2.0 license does not replace these third-party terms
+or grant commercial-use rights to the separately licensed reconstruction
+code. See docs/THIRD_PARTY.md and Sound_Rec/MODEL_CARD.md.

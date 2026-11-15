@@ -1,0 +1,4 @@
+Info: creating stash file /tmp/ttly qt path check/outside build/.qmake.stash
+g++ -c -pipe -O2 -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC -D'TTLY_SOURCE_ROOT="/tmp/ttly qt path check/source tree"' -DQT_NO_DEBUG -DQT_CORE_LIB -I../source\ tree/TTLY/check -I. -I<PROJECT_ROOT>/.local/qt5/usr/include/x86_64-linux-gnu/qt5 -I<PROJECT_ROOT>/.local/qt5/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I<PROJECT_ROOT>/.local/qt5/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -o main.o ../source\ tree/TTLY/check/main.cpp
+g++ -Wl,-O1 -o root-check main.o   <PROJECT_ROOT>/.local/qt5/usr/lib/x86_64-linux-gnu/libQt5Core.so -lpthread   
+/tmp/ttly qt path check/source tree

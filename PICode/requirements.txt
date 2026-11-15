@@ -1,0 +1,4 @@
+# Linux device-side services; Python 3.10 recommended.
+pyserial>=3.5,<4
+opencv-python>=4.5,<5
+PyAudio>=0.2.13,<0.3

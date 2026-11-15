@@ -1,0 +1,5 @@
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-qingyun'
+libpng warning: eXIf: duplicate
+Unable to create an udev monitor. No devices can be detected.
+libpng warning: eXIf: duplicate
+UI smoke: PASS 3 windows; default ports and project output paths checked

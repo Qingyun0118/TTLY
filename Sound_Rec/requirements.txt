@@ -1,0 +1,21 @@
+# Python 3.10. Versions recovered from the original environment's dist-info metadata.
+# conda-meta contained stale TensorFlow 2.10/Keras 2.10 records; use the installed pip versions.
+numpy==1.26.4
+scipy==1.15.3
+tensorflow==2.19.0
+tensorflow-hub==0.16.1
+tf-keras==2.19.0
+keras==3.10.0
+librosa==0.11.0
+soundfile==0.13.1
+audioread==3.0.1
+# Versions embedded in the retained classifier take precedence over the old environment.
+scikit-learn==1.6.0
+xgboost==2.1.4
+joblib==1.5.0
+numba==0.61.2
+llvmlite==0.44.0
+h5py==3.12.1
+protobuf==3.20.3
+# TensorFlow Hub 0.16.1 imports pkg_resources, removed by newer setuptools.
+setuptools==80.9.0
